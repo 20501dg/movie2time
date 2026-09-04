@@ -3,9 +3,10 @@ import pandas as pd
 import plotly.express as px
 
 
-# --------------------------------------------------
+# ==================================================
 # 페이지 설정
-# --------------------------------------------------
+# ==================================================
+
 st.set_page_config(
     page_title="영화 데이터 그래프 도감 2 - 분포와 관계",
     page_icon="🎬",
@@ -13,9 +14,10 @@ st.set_page_config(
 )
 
 
-# --------------------------------------------------
+# ==================================================
 # 제목
-# --------------------------------------------------
+# ==================================================
+
 st.title("🎬 영화 데이터 그래프 도감 2 - 분포와 관계")
 
 st.markdown(
@@ -26,9 +28,10 @@ st.markdown(
 st.divider()
 
 
-# --------------------------------------------------
+# ==================================================
 # 데이터 불러오기
-# --------------------------------------------------
+# ==================================================
+
 DATA_URL = (
     "https://raw.githubusercontent.com/greatsong/modudata/"
     "main/data/kobis_movies.csv"
@@ -65,10 +68,9 @@ def load_data():
             errors="coerce"
         )
 
-    # 영화명 결측값 처리
+    # 결측값 처리
     df["movieNm"] = df["movieNm"].fillna("영화명 없음")
 
-    # 국가 결측값 처리
     df["nation"] = (
         df["nation"]
         .fillna("기타")
@@ -88,10 +90,13 @@ except Exception as e:
     st.stop()
 
 
-# --------------------------------------------------
+# ==================================================
 # 기본 정보
-# --------------------------------------------------
+# ==================================================
+
 st.info(f"📊 현재 분석 데이터: **{len(df):,}편**")
+
+st.divider()
 
 
 # ==================================================
@@ -106,7 +111,10 @@ genre_count = (
     .reset_index()
 )
 
-genre_count.columns = ["장르", "영화 편수"]
+genre_count.columns = [
+    "장르",
+    "영화 편수"
+]
 
 
 fig_genre = px.pie(
@@ -137,7 +145,6 @@ st.plotly_chart(
     use_container_width=True
 )
 
-
 st.markdown("### 💡 이 그래프로 알 수 있는 것")
 
 st.info(
@@ -149,7 +156,7 @@ st.divider()
 
 
 # ==================================================
-# 2. 장르 속 영화 - 트리맵
+# 2. 장르 안에 영화가 들어 있는 트리맵
 # ==================================================
 
 st.header("2️⃣ 장르 안에 들어 있는 영화")
@@ -160,15 +167,26 @@ st.caption(
 
 
 treemap_df = df[
-    ["genre", "movieNm", "total_audi"]
+    [
+        "genre",
+        "movieNm",
+        "total_audi"
+    ]
 ].dropna(
-    subset=["genre", "movieNm", "total_audi"]
+    subset=[
+        "genre",
+        "movieNm",
+        "total_audi"
+    ]
 ).copy()
 
 
 fig_treemap = px.treemap(
     treemap_df,
-    path=["genre", "movieNm"],
+    path=[
+        "genre",
+        "movieNm"
+    ],
     values="total_audi",
     title="장르별 영화와 총 관객 수"
 )
@@ -190,7 +208,6 @@ st.plotly_chart(
     use_container_width=True
 )
 
-
 st.markdown("### 💡 이 그래프로 알 수 있는 것")
 
 st.info(
@@ -208,9 +225,14 @@ st.divider()
 st.header("3️⃣ 총 관객 수의 분포")
 
 hist_df = df[
-    ["movieNm", "total_audi"]
+    [
+        "movieNm",
+        "total_audi"
+    ]
 ].dropna(
-    subset=["total_audi"]
+    subset=[
+        "total_audi"
+    ]
 ).copy()
 
 
@@ -248,20 +270,19 @@ most_popular = df.loc[
     df["total_audi"].idxmax()
 ]
 
-max_audience = most_popular["total_audi"]
 max_movie = most_popular["movieNm"]
+max_audience = most_popular["total_audi"]
 
 
-# 가장 많이 몰린 구간 계산
-counts, bins = pd.cut(
-    hist_df["total_audi"],
-    bins=20,
-    retbins=True
-)
+# 가장 영화가 많이 몰린 구간
+try:
 
-bin_counts = counts.value_counts().sort_index()
+    bins = pd.cut(
+        hist_df["total_audi"],
+        bins=20
+    )
 
-if len(bin_counts) > 0:
+    bin_counts = bins.value_counts().sort_index()
 
     most_common_bin = bin_counts.idxmax()
 
@@ -273,9 +294,12 @@ if len(bin_counts) > 0:
         f"{high_value:,.0f}명** 구간에 몰려 있습니다."
     )
 
-else:
+except Exception:
 
-    distribution_text = "관객 수 분포를 계산할 수 없습니다."
+    distribution_text = (
+        "영화별 총 관객 수가 어느 구간에 몰려 있는지 "
+        "히스토그램에서 확인할 수 있습니다."
+    )
 
 
 st.markdown("### 💡 이 그래프로 알 수 있는 것")
@@ -343,7 +367,6 @@ st.plotly_chart(
     use_container_width=True
 )
 
-
 st.markdown("### 💡 이 그래프로 알 수 있는 것")
 
 st.info(
@@ -360,19 +383,20 @@ st.divider()
 
 st.header("5️⃣ 장르별 총 관객 수 분포")
 
-# 영화가 10편 이상인 장르만 선택
-genre_10plus = (
-    df["genre"]
-    .value_counts()
+st.caption(
+    "영화가 10편 이상인 장르만 비교합니다."
 )
 
-genre_10plus = genre_10plus[
-    genre_10plus >= 10
+
+genre_counts = df["genre"].value_counts()
+
+valid_genres = genre_counts[
+    genre_counts >= 10
 ].index
 
 
 box_df = df[
-    df["genre"].isin(genre_10plus)
+    df["genre"].isin(valid_genres)
 ].copy()
 
 box_df = box_df[
@@ -382,7 +406,9 @@ box_df = box_df[
         "total_audi"
     ]
 ].dropna(
-    subset=["total_audi"]
+    subset=[
+        "total_audi"
+    ]
 )
 
 
@@ -417,7 +443,6 @@ st.plotly_chart(
     use_container_width=True
 )
 
-
 st.markdown("### 💡 이 그래프로 알 수 있는 것")
 
 st.info(
@@ -430,10 +455,15 @@ st.divider()
 
 
 # ==================================================
-# 6. 개봉일 스크린 수 + 첫 주 관객 버블 산점도
+# 6. 버블 그래프
 # ==================================================
 
 st.header("6️⃣ 개봉일 스크린 수와 총 관객의 관계 - 버블 그래프")
+
+st.caption(
+    "버블 크기는 첫 주 관객 수(first_week_audi)를 나타냅니다."
+)
+
 
 bubble_df = df[
     [
@@ -452,7 +482,6 @@ bubble_df = df[
 ).copy()
 
 
-# 버블 크기가 너무 작은 경우를 방지
 bubble_df["bubble_size"] = (
     bubble_df["first_week_audi"].clip(lower=1)
 )
@@ -495,12 +524,12 @@ st.plotly_chart(
     use_container_width=True
 )
 
-
 st.markdown("### 💡 이 그래프로 알 수 있는 것")
 
 st.info(
     "개봉일 스크린 수와 총 관객의 관계뿐만 아니라 "
-    "첫 주에 얼마나 많은 관객을 모았는지를 버블 크기로 함께 비교할 수 있습니다."
+    "첫 주에 얼마나 많은 관객을 모았는지를 버블 크기로 "
+    "함께 비교할 수 있습니다."
 )
 
 st.divider()
@@ -511,6 +540,11 @@ st.divider()
 # ==================================================
 
 st.header("7️⃣ 제작 국가에서 장르로 내려가는 분포")
+
+st.caption(
+    "칸의 크기는 영화 편수를 나타냅니다."
+)
+
 
 sunburst_df = df[
     [
@@ -525,11 +559,13 @@ sunburst_df = df[
 ).copy()
 
 
-# 국가와 장르별 영화 편수 계산
 sunburst_count = (
     sunburst_df
     .groupby(
-        ["nation", "genre"],
+        [
+            "nation",
+            "genre"
+        ],
         as_index=False
     )
     .size()
@@ -544,7 +580,10 @@ sunburst_count.columns = [
 
 fig_sunburst = px.sunburst(
     sunburst_count,
-    path=["nation", "genre"],
+    path=[
+        "nation",
+        "genre"
+    ],
     values="영화 편수",
     title="제작 국가 → 장르별 영화 편수"
 )
@@ -566,12 +605,95 @@ st.plotly_chart(
     use_container_width=True
 )
 
-
 st.markdown("### 💡 이 그래프로 알 수 있는 것")
 
 st.info(
     "어떤 제작 국가의 영화가 많이 포함되어 있는지와 "
-    "각 국가에서 어떤 장르의 영화가 많이 나타나는지를 함께 살펴볼 수 있습니다."
+    "각 국가에서 어떤 장르의 영화가 많이 나타나는지를 "
+    "함께 살펴볼 수 있습니다."
+)
+
+st.divider()
+
+
+# ==================================================
+# 8. 어떤 장르가 10위권 내에 오래 있었는지
+# ==================================================
+
+st.header("8️⃣ 어떤 장르가 10위권 내에 오래 있었는지")
+
+st.caption(
+    "장르별 영화들의 TOP10 체류 일수를 비교합니다."
+)
+
+
+top10_df = df[
+    [
+        "genre",
+        "movieNm",
+        "days_in_top10"
+    ]
+].dropna(
+    subset=[
+        "genre",
+        "days_in_top10"
+    ]
+).copy()
+
+
+# 영화가 3편 이상 있는 장르만 비교
+top10_genre_counts = (
+    top10_df["genre"]
+    .value_counts()
+)
+
+valid_top10_genres = top10_genre_counts[
+    top10_genre_counts >= 3
+].index
+
+
+top10_df = top10_df[
+    top10_df["genre"].isin(valid_top10_genres)
+]
+
+
+fig_top10 = px.box(
+    top10_df,
+    x="genre",
+    y="days_in_top10",
+    points="all",
+    hover_name="movieNm",
+    title="어떤 장르가 10위권 내에 오래 있었는지",
+    labels={
+        "genre": "장르",
+        "days_in_top10": "TOP10 체류 일수"
+    }
+)
+
+fig_top10.update_traces(
+    hovertemplate=(
+        "<b>%{hovertext}</b><br>"
+        "TOP10 체류 일수: %{y:,.0f}일"
+        "<extra></extra>"
+    )
+)
+
+fig_top10.update_layout(
+    height=650
+)
+
+st.plotly_chart(
+    fig_top10,
+    use_container_width=True
+)
+
+
+st.markdown("### 💡 이 그래프로 알 수 있는 것")
+
+st.info(
+    "상자그림은 장르별 TOP10 체류 일수의 중앙값과 분포를 "
+    "비교할 수 있기 때문에, 어떤 장르가 10위권에 오래 "
+    "머무르는 경향이 있는지 알아보기에 적합합니다."
 )
 
 st.divider()
@@ -595,6 +717,7 @@ display_columns = [
     "total_audi",
     "days_in_top10"
 ]
+
 
 st.dataframe(
     df[display_columns],
